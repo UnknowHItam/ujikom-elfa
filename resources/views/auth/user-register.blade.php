@@ -345,6 +345,7 @@
                 </div>
                 
                 <!-- reCAPTCHA -->
+                @if(config('captcha.sitekey') && config('captcha.sitekey') !== 'your_recaptcha_site_key')
                 <div class="form-group mt-4">
                     {!! NoCaptcha::renderJs() !!}
                     {!! NoCaptcha::display() !!}
@@ -352,6 +353,12 @@
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
                 </div>
+                @else
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Mode Development:</strong> CAPTCHA dinonaktifkan. Silakan setup Google reCAPTCHA keys di file .env untuk production.
+                </div>
+                @endif
                 
                 <div class="d-grid mt-3">
                     <button type="submit" class="btn btn-register">

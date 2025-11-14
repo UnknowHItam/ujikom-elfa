@@ -37,6 +37,12 @@
                         'icon' => 'fa-desktop',
                         'color' => 'info',
                         'keys' => ['items_per_page', 'enable_public_upload', 'auto_approve_content']
+                    ],
+                    'gallery_user' => [
+                        'title' => 'Pengaturan Galeri User',
+                        'icon' => 'fa-users',
+                        'color' => 'primary',
+                        'keys' => ['gallery_require_login', 'gallery_auto_approve_comments']
                     ]
                 ];
                 

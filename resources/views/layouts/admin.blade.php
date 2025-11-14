@@ -12,6 +12,7 @@
             --secondary-color: #224abe;
             --sidebar-width: 280px;
             --header-height: 70px;
+            --sidebar-bg: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
         }
 
         body {
@@ -26,12 +27,13 @@
             left: 0;
             height: 100vh;
             width: var(--sidebar-width);
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            background: var(--sidebar-bg);
             color: white;
             z-index: 1000;
             transition: all 0.3s ease;
             overflow-y: auto;
             overflow-anchor: none;
+            box-shadow: 3px 0 10px rgba(0,0,0,0.1);
         }
         
         /* Prevent focus scroll */
@@ -108,6 +110,7 @@
             width: 20px;
             margin-right: 12px;
             text-align: center;
+            font-size: 16px;
         }
 
         .menu-section {
@@ -167,35 +170,50 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.08);
             border: none;
             transition: transform 0.3s ease;
+            height: 100%;
         }
 
         .stats-card:hover {
             transform: translateY(-5px);
         }
 
-        .stats-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 15px;
+        .icon-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            color: white;
-            margin-bottom: 15px;
+            font-size: 20px;
         }
 
-        .stats-number {
-            font-size: 32px;
+        .bg-primary-light {
+            background-color: rgba(78, 115, 223, 0.15);
+        }
+
+        .bg-success-light {
+            background-color: rgba(28, 200, 138, 0.15);
+        }
+
+        .bg-warning-light {
+            background-color: rgba(246, 194, 62, 0.15);
+        }
+
+        .bg-info-light {
+            background-color: rgba(54, 185, 204, 0.15);
+        }
+
+        .stat-text {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .stat-number {
+            font-size: 24px;
             font-weight: 700;
             color: #333;
-            margin: 0;
-        }
-
-        .stats-label {
-            color: #666;
-            font-size: 14px;
-            margin: 0;
+            margin-top: 5px;
         }
 
         /* Tables */
@@ -204,6 +222,7 @@
             border-radius: 15px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.08);
             overflow: hidden;
+            margin-bottom: 25px;
         }
 
         .table-card-header {
@@ -233,9 +252,20 @@
         }
 
         /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 250px;
+            }
+            
+            .main-content {
+                margin-left: 250px;
+            }
+        }
+        
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
+                width: 280px;
             }
             
             .sidebar.show {
@@ -244,6 +274,18 @@
             
             .main-content {
                 margin-left: 0;
+            }
+            
+            .header {
+                padding: 0 15px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .stats-card {
+                margin-bottom: 20px;
             }
         }
 
@@ -271,10 +313,44 @@
             border-top: 1px solid #eee;
             padding: 20px 25px;
         }
+        
+        /* Toggle Button for Mobile */
+        .sidebar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: #333;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+            margin-right: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar-toggle {
+                display: block;
+            }
+        }
+        
+        /* Menu item spacing */
+        .menu-section + .menu-section {
+            margin-top: 10px;
+        }
+        
+        /* Badge styling */
+        .badge {
+            font-size: 0.75em;
+            padding: 0.35em 0.65em;
+        }
     </style>
     @yield('styles')
 </head>
 <body>
+    <!-- Sidebar Toggle Button (Mobile) -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -364,6 +440,20 @@
                 </div>
             </div>
 
+            <!-- Notifikasi -->
+            <div class="menu-section">
+                <div class="menu-section-title">Notifikasi</div>
+                <div class="menu-item">
+                    <a href="{{ route('admin.notifications.index') }}" class="menu-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}">
+                        <i class="fas fa-bell"></i>
+                        <span>Aktivitas User</span>
+                        @if(isset($unreadNotifications) && $unreadNotifications > 0)
+                            <span class="badge bg-danger ms-auto">{{ $unreadNotifications }}</span>
+                        @endif
+                    </a>
+                </div>
+            </div>
+
             <!-- Laporan & Statistik -->
             <div class="menu-section">
                 <div class="menu-section-title">Laporan</div>
@@ -382,18 +472,6 @@
                     <a href="{{ route('admin.settings') }}" class="menu-link {{ request()->routeIs('admin.settings') ? 'active' : '' }}">
                         <i class="fas fa-cog"></i>
                         <span>Pengaturan</span>
-                    </a>
-                </div>
-                <div class="menu-item">
-                    <a href="{{ route('home') }}" class="menu-link" target="_blank">
-                        <i class="fas fa-external-link-alt"></i>
-                        <span>Lihat Galeri Publik</span>
-                    </a>
-                </div>
-                <div class="menu-item">
-                    <a href="{{ route('user.dashboard') }}" class="menu-link" target="_blank">
-                        <i class="fas fa-user-circle"></i>
-                        <span>Buka User Dashboard</span>
                     </a>
                 </div>
             </div>
@@ -463,9 +541,6 @@
             });
             
             link.addEventListener('click', function(e) {
-                // Prevent default behavior
-                e.preventDefault();
-                
                 // Save current scroll position
                 const currentScroll = sidebar.scrollTop;
                 

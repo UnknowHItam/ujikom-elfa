@@ -11,9 +11,19 @@ use Illuminate\Support\Facades\Storage;
 
 class SettingsController extends Controller
 {
+    private function checkAdminLogin()
+    {
+        if (!session()->has('admin_logged_in')) {
+            return redirect()->route('admin.login');
+        }
+        return null;
+    }
 
     public function index()
     {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
         // Get settings grouped by category
         $settingsGrouped = Setting::orderBy('group')->orderBy('label')->get()->groupBy('group');
 
@@ -31,6 +41,9 @@ class SettingsController extends Controller
 
     public function update(Request $request)
     {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
         try {
             // Update all settings from request
             foreach ($request->except(['_token', '_method']) as $key => $value) {
@@ -54,6 +67,9 @@ class SettingsController extends Controller
 
     public function clearCache()
     {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
         try {
             Artisan::call('cache:clear');
             Artisan::call('config:clear');

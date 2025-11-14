@@ -13,6 +13,11 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        // Cek apakah admin sudah login
+        if (!session()->has('admin_logged_in')) {
+            return redirect()->route('admin.login');
+        }
+        
         try {
             // Initialize variables with default values
             $totalPhotos = 0;
@@ -27,17 +32,42 @@ class DashboardController extends Controller
             $activeAgenda = 0;
             $totalInformasi = 0;
             $activeInformasi = 0;
+            
+            // Category names mapping
+            $categoryNames = [
+                'academic' => 'Akademik',
+                'extracurricular' => 'Ekstrakurikuler',
+                'event' => 'Acara & Event',
+                'common' => 'Umum'
+            ];
+            
+            // Category colors for chart
+            $categoryColors = [
+                'academic' => '#4e73df',
+                'extracurricular' => '#1cc88a',
+                'event' => '#36b9cc',
+                'common' => '#f6c23e'
+            ];
+            
             // Check if galleries table exists
             if (Schema::hasTable('galleries')) {
                 $totalPhotos = Gallery::count();
                 $activePhotos = Gallery::where('is_active', true)->count();
                 $inactivePhotos = Gallery::where('is_active', false)->count();
                 
-                // Get photos by category
-                $photosByCategory = Gallery::select('category', DB::raw('count(*) as total'))
+                // Get photos by category with proper structure for chart
+                $categoryData = Gallery::select('category', DB::raw('count(*) as count'))
                     ->groupBy('category')
-                    ->get()
-                    ->pluck('total', 'category');
+                    ->get();
+                
+                // Transform data for chart
+                $photosByCategory = $categoryData->map(function($item) use ($categoryNames, $categoryColors) {
+                    return [
+                        'name' => $categoryNames[$item->category] ?? ucfirst($item->category),
+                        'count' => $item->count,
+                        'color' => $categoryColors[$item->category] ?? '#cccccc'
+                    ];
+                });
                 
                 // Get recent photos
                 $recentPhotos = Gallery::orderBy('created_at', 'desc')
@@ -70,14 +100,6 @@ class DashboardController extends Controller
                 $totalInformasi = Informasi::count();
                 $activeInformasi = Informasi::where('is_active', true)->count();
             }
-            
-            // Category names mapping
-            $categoryNames = [
-                'academic' => 'Akademik',
-                'extracurricular' => 'Ekstrakurikuler',
-                'event' => 'Acara & Event',
-                'common' => 'Umum'
-            ];
             
             return view('admin.dashboard', compact(
                 'totalPhotos',

@@ -20,20 +20,22 @@ Route::middleware('web')->group(function () {
     Route::put('/galleries/{id}', [GalleryController::class, 'update']);
     Route::delete('/galleries/{id}', [GalleryController::class, 'destroy']);
 
-    // Like/Dislike Routes (Require Authentication & Complete Profile)
-    Route::middleware(['auth', 'profile.complete'])->group(function () {
+    // Like/Dislike Routes (Require Authentication)
+    Route::middleware(['auth'])->group(function () {
         Route::post('/galleries/{gallery}/like', [GalleryLikeController::class, 'toggle']);
     });
     Route::get('/galleries/{gallery}/like-status', [GalleryLikeController::class, 'getStatus']);
 
-    // Comment Routes (Require Complete Profile for posting)
+    // Comment Routes
     Route::get('/galleries/{gallery}/comments', [GalleryCommentController::class, 'index']);
-    Route::middleware(['auth', 'profile.complete'])->group(function () {
+    Route::middleware(['auth'])->group(function () {
         Route::post('/galleries/{gallery}/comments', [GalleryCommentController::class, 'store']);
+        Route::put('/galleries/{gallery}/comments/{comment}', [GalleryCommentController::class, 'update']);
+        Route::delete('/galleries/{gallery}/comments/{comment}', [GalleryCommentController::class, 'destroy']);
     });
 
-    // Download Routes (Require Complete Profile)
-    Route::middleware(['auth', 'profile.complete'])->group(function () {
+    // Download Routes (Require Authentication)
+    Route::middleware(['auth'])->group(function () {
         Route::post('/galleries/{gallery}/download', [GalleryDownloadController::class, 'download']);
     });
 });

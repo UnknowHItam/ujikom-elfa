@@ -11,9 +11,25 @@ use Illuminate\Support\Facades\Validator;
 
 class GalleryController extends Controller
 {
+    // Middleware sederhana untuk memeriksa login admin
+    public function __construct()
+    {
+        // Tambahkan pengecekan login di setiap method
+    }
+    
+    private function checkAdminLogin()
+    {
+        if (!session()->has('admin_logged_in')) {
+            return redirect()->route('admin.login');
+        }
+        return null;
+    }
 
     public function index(Request $request)
     {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
         $query = Gallery::query();
 
         // Filter by category
@@ -45,6 +61,9 @@ class GalleryController extends Controller
 
     public function create()
     {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
         $categories = [
             'academic' => 'Akademik',
             'extracurricular' => 'Ekstrakurikuler',
@@ -67,6 +86,9 @@ class GalleryController extends Controller
 
     public function store(Request $request)
     {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
         // Get settings from database
         $maxFileSizeKB = Setting::get('upload_max_file_size', 5120); // Default 5120KB (5MB)
         $allowedFormats = Setting::get('upload_allowed_extensions', 'jpg, jpeg, png, gif');
@@ -120,11 +142,17 @@ class GalleryController extends Controller
 
     public function show(Gallery $gallery)
     {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
         return view('admin.galleries.show', compact('gallery'));
     }
 
     public function edit(Gallery $gallery)
     {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
         $categories = [
             'academic' => 'Akademik',
             'extracurricular' => 'Ekstrakurikuler',
@@ -147,6 +175,9 @@ class GalleryController extends Controller
 
     public function update(Request $request, Gallery $gallery)
     {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
         // Debug: Log the request data
         \Log::info('Update request data:', $request->all());
         \Log::info('Has file: ' . ($request->hasFile('image') ? 'Yes' : 'No'));
@@ -224,6 +255,9 @@ class GalleryController extends Controller
 
     public function destroy(Gallery $gallery)
     {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
         // Delete image file
         Storage::disk('public')->delete($gallery->image_path);
 
@@ -235,6 +269,9 @@ class GalleryController extends Controller
 
     public function category($category)
     {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
         $galleries = Gallery::where('category', $category)
             ->orderBy('created_at', 'desc')
             ->paginate(12);
@@ -253,6 +290,9 @@ class GalleryController extends Controller
 
     public function toggleStatus(Gallery $gallery)
     {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
         $gallery->update(['is_active' => !$gallery->is_active]);
         
         $status = $gallery->is_active ? 'diaktifkan' : 'dinonaktifkan';
@@ -261,4 +301,63 @@ class GalleryController extends Controller
             ->with('success', "Foto berhasil {$status}!");
     }
 
+    public function deleteComment(\App\Models\GalleryComment $comment)
+    {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
+        $comment->delete();
+        
+        return redirect()->back()
+            ->with('success', 'Komentar berhasil dihapus!');
+    }
+
+    public function notifications()
+    {
+        $redirect = $this->checkAdminLogin();
+        if ($redirect) return $redirect;
+        
+        // Get recent activities from different models
+        $likes = \App\Models\GalleryLike::with(['user:id,name,username,profile_photo', 'gallery:id,title,image_path'])
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get()
+            ->map(function ($like) {
+                return [
+                    'type' => 'like',
+                    'user' => $like->user,
+                    'gallery' => $like->gallery,
+                    'created_at' => $like->created_at,
+                    'message' => $like->user->name . ' menyukai foto',
+                    'icon' => 'thumbs-up',
+                    'color' => 'success'
+                ];
+            });
+
+        $comments = \App\Models\GalleryComment::with(['user:id,name,username,profile_photo', 'gallery:id,title,image_path'])
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get()
+            ->map(function ($comment) {
+                return [
+                    'type' => 'comment',
+                    'user' => $comment->user,
+                    'gallery' => $comment->gallery,
+                    'created_at' => $comment->created_at,
+                    'message' => $comment->user->name . ' mengomentari foto',
+                    'comment' => $comment->comment,
+                    'icon' => 'comment',
+                    'color' => 'primary'
+                ];
+            });
+
+        // Merge all activities and sort by created_at
+        $activities = collect()
+            ->merge($likes)
+            ->merge($comments)
+            ->sortByDesc('created_at')
+            ->take(50);
+
+        return view('admin.notifications.index', compact('activities'));
+    }
 }

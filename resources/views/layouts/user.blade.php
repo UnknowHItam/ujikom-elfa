@@ -343,11 +343,6 @@
                         </a>
                     </li>
                     @else
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
-                            <i class="fas fa-tools"></i>Admin
-                        </a>
-                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             @if(Auth::user()->profile_photo)
@@ -362,7 +357,7 @@
                             <li><a class="dropdown-item" href="{{ route('user.profile') }}"><i class="fas fa-user me-2"></i>Profil</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <form action="{{ route('logout') }}" method="POST">
+                                <form action="{{ route('user.logout') }}" method="POST">
                                     @csrf
                                     <button type="submit" class="dropdown-item text-danger">
                                         <i class="fas fa-sign-out-alt me-2"></i>Logout

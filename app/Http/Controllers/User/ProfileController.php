@@ -22,20 +22,18 @@ class ProfileController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'student_id' => 'required|string|max:50',
-            'class' => 'required|string|max:50',
+            'username' => 'required|string|max:255|unique:users,username,' . $user->id,
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
             'current_password' => 'nullable|required_with:new_password',
             'new_password' => 'nullable|min:8',
         ], [
-            'student_id.required' => 'NISN wajib diisi untuk melengkapi profil.',
-            'class.required' => 'Kelas wajib diisi untuk melengkapi profil.',
+            'username.required' => 'Username wajib diisi',
+            'username.unique' => 'Username sudah digunakan oleh user lain',
         ]);
 
         // Update basic profile
         $user->name = $validated['name'];
-        $user->student_id = $validated['student_id'] ?? null;
-        $user->class = $validated['class'] ?? null;
+        $user->username = $validated['username'];
 
         // Handle profile photo upload
         if ($request->hasFile('profile_photo')) {

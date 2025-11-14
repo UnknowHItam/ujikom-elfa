@@ -110,18 +110,6 @@
     @endguest
     
     @auth
-        @if(!auth()->user()->student_id || !auth()->user()->class)
-            <div class="alert alert-warning alert-dismissible fade show m-0" role="alert">
-                <div class="container">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Profil Belum Lengkap!</strong> Lengkapi NISN, Nama Lengkap, dan Kelas untuk dapat like, komentar, dan download foto.
-                    <a href="{{ route('user.profile') }}" class="alert-link ms-2">
-                        <i class="fas fa-user-edit me-1"></i>Lengkapi Profil
-                    </a>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            </div>
-        @endif
     @endauth
 
     <!-- Filter Section -->
@@ -515,6 +503,7 @@
                     data.data.forEach(comment => {
                         const commentDiv = document.createElement('div');
                         commentDiv.className = 'border-bottom pb-2 mb-2';
+                        commentDiv.dataset.commentId = comment.id;
                         
                         // Foto profil user
                         let userPhoto = '';
@@ -528,13 +517,32 @@
                                         </div>`;
                         }
                         
+                        // Cek apakah komentar milik user yang sedang login
+                        const isOwnComment = {{ auth()->check() ? 'true' : 'false' }} && comment.user_id === {{ auth()->id() ?? 0 }};
+                        
+                        // Tombol aksi untuk komentar milik user
+                        let actionButtons = '';
+                        if (isOwnComment) {
+                            actionButtons = `
+                                <div class="mt-1">
+                                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editComment(${comment.id})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteComment(${comment.id})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            `;
+                        }
+                        
                         commentDiv.innerHTML = `
                             <div class="d-flex align-items-start">
                                 ${userPhoto}
                                 <div class="flex-grow-1">
                                     <strong class="d-block">${comment.user ? comment.user.name : 'Anonymous'}</strong>
                                     <small class="text-muted">${new Date(comment.created_at).toLocaleDateString('id-ID')}</small>
-                                    <p class="mb-0 mt-1">${comment.comment}</p>
+                                    <p class="mb-0 mt-1 comment-text">${comment.comment}</p>
+                                    ${actionButtons}
                                 </div>
                             </div>
                         `;
@@ -594,6 +602,148 @@
             }
         });
         @endauth
+
+        // Edit comment
+        async function editComment(commentId) {
+            if (!currentPhotoId) return;
+            
+            // Temukan elemen komentar
+            const commentDiv = document.querySelector(`[data-comment-id="${commentId}"]`);
+            const commentText = commentDiv.querySelector('.comment-text');
+            
+            // Simpan teks asli
+            const originalText = commentText.textContent;
+            
+            // Buat form edit
+            const editForm = document.createElement('form');
+            editForm.className = 'mt-2';
+            editForm.innerHTML = `
+                <div class="mb-2">
+                    <textarea class="form-control form-control-sm" rows="3">${originalText}</textarea>
+                </div>
+                <div class="d-flex gap-1">
+                    <button type="submit" class="btn btn-sm btn-primary">Simpan</button>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="cancelEdit(${commentId})">Batal</button>
+                </div>
+            `;
+            
+            // Ganti teks dengan form edit
+            commentText.replaceWith(editForm);
+            
+            // Handle submit form
+            editForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const newComment = this.querySelector('textarea').value;
+                
+                try {
+                    const response = await fetch(`/api/galleries/${currentPhotoId}/comments/${commentId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            comment: newComment
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Ganti form dengan teks baru
+                        const newText = document.createElement('p');
+                        newText.className = 'mb-0 mt-1 comment-text';
+                        newText.textContent = newComment;
+                        editForm.replaceWith(newText);
+                        
+                        // Show success message
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success alert-dismissible fade show mt-2';
+                        alertDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Komentar berhasil diupdate!<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                        commentDiv.querySelector('.flex-grow-1').appendChild(alertDiv);
+                        setTimeout(() => alertDiv.remove(), 3000);
+                    } else {
+                        alert(data.message || 'Gagal mengupdate komentar');
+                        
+                        // Kembalikan ke teks asli
+                        const newText = document.createElement('p');
+                        newText.className = 'mb-0 mt-1 comment-text';
+                        newText.textContent = originalText;
+                        editForm.replaceWith(newText);
+                    }
+                } catch (error) {
+                    console.error('Error updating comment:', error);
+                    alert('Terjadi kesalahan. Silakan coba lagi.');
+                    
+                    // Kembalikan ke teks asli
+                    const newText = document.createElement('p');
+                    newText.className = 'mb-0 mt-1 comment-text';
+                    newText.textContent = originalText;
+                    editForm.replaceWith(newText);
+                }
+            });
+        }
+
+        // Cancel edit comment
+        function cancelEdit(commentId) {
+            const commentDiv = document.querySelector(`[data-comment-id="${commentId}"]`);
+            const editForm = commentDiv.querySelector('form');
+            
+            // Kembalikan ke teks asli
+            const originalText = editForm.querySelector('textarea').value;
+            const newText = document.createElement('p');
+            newText.className = 'mb-0 mt-1 comment-text';
+            newText.textContent = originalText;
+            editForm.replaceWith(newText);
+        }
+
+        // Delete comment
+        async function deleteComment(commentId) {
+            if (!currentPhotoId) return;
+            
+            if (!confirm('Apakah Anda yakin ingin menghapus komentar ini?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/galleries/${currentPhotoId}/comments/${commentId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Hapus komentar dari DOM
+                    const commentDiv = document.querySelector(`[data-comment-id="${commentId}"]`);
+                    commentDiv.remove();
+                    
+                    // Update jumlah komentar
+                    const commentsCount = document.getElementById('commentsCount');
+                    commentsCount.textContent = parseInt(commentsCount.textContent) - 1;
+                    
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                    alertDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Komentar berhasil dihapus!<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                    document.getElementById('commentForm').insertAdjacentElement('beforebegin', alertDiv);
+                    setTimeout(() => alertDiv.remove(), 3000);
+                } else {
+                    alert(data.message || 'Gagal menghapus komentar');
+                }
+            } catch (error) {
+                console.error('Error deleting comment:', error);
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+            }
+        }
 
         // Get category name
         function getCategoryName(category) {

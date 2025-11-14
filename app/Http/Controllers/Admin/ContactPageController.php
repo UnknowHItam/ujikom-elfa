@@ -22,9 +22,6 @@ class ContactPageController extends Controller
                 'phone_alt' => '0812-3456-7890',
                 'email' => 'info@smkn4bogor.sch.id',
                 'email_alt' => 'smkn4bogor@gmail.com',
-                'instagram_url' => '#',
-                'youtube_url' => '#',
-                'whatsapp_url' => '#',
                 'office_hours_weekday' => '07:00 - 16:00 WIB',
                 'office_hours_saturday' => '07:00 - 12:00 WIB',
                 'office_hours_sunday' => 'Tutup',
@@ -45,9 +42,6 @@ class ContactPageController extends Controller
             'phone_alt' => 'nullable|string',
             'email' => 'required|email',
             'email_alt' => 'nullable|email',
-            'instagram_url' => 'nullable|url',
-            'youtube_url' => 'nullable|url',
-            'whatsapp_url' => 'nullable|url',
             'office_hours_weekday' => 'required|string',
             'office_hours_saturday' => 'required|string',
             'office_hours_sunday' => 'required|string',
@@ -60,7 +54,18 @@ class ContactPageController extends Controller
             $contact = new ContactPage();
         }
 
-        $contact->fill($request->all());
+        // Hanya mengisi field yang tersisa (tanpa URL media sosial)
+        $contact->title = $request->title;
+        $contact->subtitle = $request->subtitle;
+        $contact->address = $request->address;
+        $contact->phone = $request->phone;
+        $contact->phone_alt = $request->phone_alt;
+        $contact->email = $request->email;
+        $contact->email_alt = $request->email_alt;
+        $contact->office_hours_weekday = $request->office_hours_weekday;
+        $contact->office_hours_saturday = $request->office_hours_saturday;
+        $contact->office_hours_sunday = $request->office_hours_sunday;
+        $contact->note = $request->note;
         $contact->save();
 
         return redirect()->route('admin.contact.edit')

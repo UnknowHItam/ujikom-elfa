@@ -23,15 +23,21 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
-        // Validasi input termasuk captcha
-        $validator = Validator::make($request->all(), [
+        // Validasi input
+        $rules = [
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users,username',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
-            'g-recaptcha-response' => 'required|captcha',
-        ], [
+        ];
+
+        // Hanya validasi CAPTCHA jika keys sudah diset dengan benar
+        if (config('captcha.sitekey') && config('captcha.sitekey') !== 'your_recaptcha_site_key') {
+            $rules['g-recaptcha-response'] = 'required|captcha';
+        }
+
+        $validator = Validator::make($request->all(), $rules, [
             'name.required' => 'Nama lengkap wajib diisi',
             'username.required' => 'Username wajib diisi',
             'username.unique' => 'Username sudah digunakan',

@@ -15,8 +15,8 @@ class ReportController extends Controller
 {
     public function gallery(Request $request)
     {
-        // Filter tanggal - default dari tahun 2000 untuk menampilkan semua data
-        $startDate = $request->input('start_date', '2000-01-01');
+        // Filter tanggal - default dari awal tahun ini untuk menampilkan data yang lebih relevan
+        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->format('Y-m-d'));
         $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
         
         // Tambahkan waktu akhir hari ke endDate agar semua foto di hari tersebut termasuk
@@ -169,8 +169,8 @@ class ReportController extends Controller
 
     public function exportPdf(Request $request)
     {
-        // Filter tanggal - default dari tahun 2000 untuk menampilkan semua data
-        $startDate = $request->input('start_date', '2000-01-01');
+        // Filter tanggal - default dari awal tahun ini untuk menampilkan data yang lebih relevan
+        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->format('Y-m-d'));
         $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
         
         // Tambahkan waktu akhir hari ke endDate

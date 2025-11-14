@@ -120,44 +120,6 @@
                         </div>
                     </div>
 
-                    <!-- Social Media Section -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="fas fa-share-alt me-2"></i>Media Sosial</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label for="instagram_url" class="form-label">Instagram URL</label>
-                                <input type="url" class="form-control @error('instagram_url') is-invalid @enderror" 
-                                       id="instagram_url" name="instagram_url" value="{{ old('instagram_url', $contact->instagram_url) }}" 
-                                       placeholder="https://instagram.com/...">
-                                @error('instagram_url')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="youtube_url" class="form-label">YouTube URL</label>
-                                <input type="url" class="form-control @error('youtube_url') is-invalid @enderror" 
-                                       id="youtube_url" name="youtube_url" value="{{ old('youtube_url', $contact->youtube_url) }}" 
-                                       placeholder="https://youtube.com/...">
-                                @error('youtube_url')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="whatsapp_url" class="form-label">WhatsApp URL</label>
-                                <input type="url" class="form-control @error('whatsapp_url') is-invalid @enderror" 
-                                       id="whatsapp_url" name="whatsapp_url" value="{{ old('whatsapp_url', $contact->whatsapp_url) }}" 
-                                       placeholder="https://wa.me/...">
-                                @error('whatsapp_url')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Office Hours Section -->
                     <div class="card mb-4">
                         <div class="card-header bg-warning text-dark">

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Gallery;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -11,8 +12,11 @@ class GalleryDownloadController extends Controller
 {
     public function download(Request $request, Gallery $gallery)
     {
-        // Cek apakah user sudah login
-        if (!auth()->check()) {
+        // Cek pengaturan apakah login diperlukan
+        $requireLogin = Setting::get('gallery_require_login', true);
+        
+        // Jika login diperlukan, cek apakah user sudah login
+        if ($requireLogin && !auth()->check()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda harus login terlebih dahulu untuk mendownload foto'
@@ -44,8 +48,10 @@ class GalleryDownloadController extends Controller
         // Generate nama file untuk download
         $fileName = $gallery->title . '_' . time() . '.' . pathinfo($imagePath, PATHINFO_EXTENSION);
         
-        // Log download activity
-        \Log::info('User ' . auth()->user()->name . ' downloaded gallery image: ' . $gallery->title);
+        // Log download activity jika user login
+        if (auth()->check()) {
+            \Log::info('User ' . auth()->user()->name . ' downloaded gallery image: ' . $gallery->title);
+        }
 
         // Return file download
         return response()->download($filePath, $fileName);

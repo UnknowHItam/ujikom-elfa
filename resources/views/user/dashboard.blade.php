@@ -717,7 +717,11 @@
         <div class="dashboard-header-wrapper">
             <h1 class="dashboard-title mb-3">
                 <span class="wave-emoji">👋</span>
-                Selamat datang di Dashboard!
+                @auth
+                    Selamat datang di galeri {{ auth()->user()->name }}!
+                @else
+                    Selamat datang di Dashboard!
+                @endauth
             </h1>
             <p class="dashboard-subtitle">
                 <i class="fas fa-chart-line me-2"></i>

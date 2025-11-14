@@ -78,6 +78,24 @@ class UnifiedSettingSeeder extends Seeder
                 'group' => 'website',
                 'label' => 'Auto Approve Konten',
                 'description' => 'Otomatis menyetujui konten yang diupload tanpa review admin'
+            ],
+            
+            // Gallery User Settings
+            [
+                'key' => 'gallery_require_login',
+                'value' => '1',
+                'type' => 'boolean',
+                'group' => 'gallery_user',
+                'label' => 'Wajib Login untuk Interaksi',
+                'description' => 'User harus daftar akun dan login terlebih dahulu agar bisa menikmati fitur like, dislike, komen dan unduh foto di galeri'
+            ],
+            [
+                'key' => 'gallery_auto_approve_comments',
+                'value' => '1',
+                'type' => 'boolean',
+                'group' => 'gallery_user',
+                'label' => 'Auto Approve Komentar',
+                'description' => 'User bebas komen tanpa harus persetujuan admin'
             ]
         ];
 
