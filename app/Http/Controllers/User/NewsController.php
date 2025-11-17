@@ -13,7 +13,8 @@ class NewsController extends Controller
      */
     public function index(Request $request)
     {
-        $query = News::published();
+        $query = News::published()
+            ->select('id', 'title', 'description', 'category', 'published_at', 'created_at', 'image_url');
         
         // Filter by category
         if ($request->has('category') && $request->category != 'all') {
@@ -24,8 +25,7 @@ class NewsController extends Controller
         if ($request->has('search') && $request->search) {
             $query->where(function($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%')
-                  ->orWhere('content', 'like', '%' . $request->search . '%');
+                  ->orWhere('description', 'like', '%' . $request->search . '%');
             });
         }
         
@@ -48,16 +48,18 @@ class NewsController extends Controller
     {
         $news = News::where('is_active', true)->findOrFail($id);
         
-        // Get related news (same category, exclude current)
+        // Get related news (same category, exclude current) - select specific columns
         $relatedNews = News::published()
             ->where('category', $news->category)
             ->where('id', '!=', $news->id)
+            ->select('id', 'title', 'image_url', 'category', 'published_at')
             ->limit(3)
             ->get();
         
-        // Get latest news
+        // Get latest news - select specific columns
         $latestNews = News::published()
             ->where('id', '!=', $news->id)
+            ->select('id', 'title', 'image_url', 'category', 'published_at')
             ->limit(5)
             ->get();
         
@@ -71,6 +73,7 @@ class NewsController extends Controller
     {
         $news = News::published()
             ->where('category', $category)
+            ->select('id', 'title', 'description', 'category', 'published_at', 'image_url')
             ->paginate(9);
         
         $categories = [

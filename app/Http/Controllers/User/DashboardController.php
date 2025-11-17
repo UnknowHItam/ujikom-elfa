@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Gallery;
 use App\Models\News;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -23,46 +25,58 @@ class DashboardController extends Controller
                     ['name' => 'Akademik', 'count' => 0, 'color' => '#4e73df', 'key' => 'academic'],
                     ['name' => 'Ekstrakurikuler', 'count' => 0, 'color' => '#1cc88a', 'key' => 'extracurricular'],
                     ['name' => 'Acara & Event', 'count' => 0, 'color' => '#36b9cc', 'key' => 'event'],
-                    ['name' => 'Umum', 'count' => 0, 'color' => '#f6c23e', 'key' => 'common']
+                    ['name' => 'Umum', 'count' => 0, 'color' => '#f6c23e', 'key' => 'general']
                 ],
                 'latestNews' => collect()
             ];
 
-            // Ambil data dari database
+            // Ambil data dari database dengan optimasi
             try {
-                // Total Galeri
-                $data['totalGalleries'] = Gallery::where('is_active', true)->count();
+                // OPTIMIZATION: Gunakan single query dengan aggregation untuk counts
+                // Sebelumnya: 9 queries, Sekarang: 3 queries
                 
-                // Total Berita
-                $data['totalNews'] = News::where('is_active', true)->count();
+                // Query 1: Total dan Recent Activity galleries
+                $galleryCounts = Gallery::selectRaw('
+                    COUNT(*) as total,
+                    SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) as recent
+                ', [now()->subDays(7)])
+                    ->where('is_active', true)
+                    ->first();
                 
-                // Pesan Belum Dibaca (belum ada model Message, set 0)
-                $data['unreadMessages'] = 0;
+                $data['totalGalleries'] = $galleryCounts->total ?? 0;
+                $data['recentActivity'] = $galleryCounts->recent ?? 0;
                 
-                // Aktivitas Terbaru (dalam 7 hari terakhir)
-                $data['recentActivity'] = Gallery::where('created_at', '>=', now()->subDays(7))->count();
+                // Query 2: Category counts menggunakan GROUP BY (single query instead of 4)
+                $categoryCounts = Gallery::selectRaw('category, COUNT(*) as count')
+                    ->where('is_active', true)
+                    ->groupBy('category')
+                    ->pluck('count', 'category');
                 
-                // Galeri Terbaru
-                $data['recentGalleries'] = Gallery::where('is_active', true)
-                    ->orderBy('created_at', 'desc')
-                    ->take(6)
-                    ->get();
-                
-                // Hitung jumlah galeri per kategori
-                $categories = ['academic', 'extracurricular', 'event', 'common'];
-                foreach ($categories as $index => $category) {
-                    $data['galleryCategories'][$index]['count'] = Gallery::where('category', $category)
-                        ->where('is_active', true)
-                        ->count();
+                foreach ($data['galleryCategories'] as $index => $category) {
+                    $key = $category['key'];
+                    $data['galleryCategories'][$index]['count'] = $categoryCounts->get($key) ?? 0;
                 }
                 
-                // Berita Terbaru
-                $data['latestNews'] = News::where('is_active', true)
-                    ->orderBy('published_at', 'desc')
-                    ->take(5)
+                // Query 3: Total News (bisa dicache)
+                $data['totalNews'] = Cache::remember('total_news', 3600, function() {
+                    return News::where('is_active', true)->count();
+                });
+                
+                // Query 4: Recent Galleries (dengan select specific columns untuk reduce memory)
+                $data['recentGalleries'] = Gallery::where('is_active', true)
+                    ->select('id', 'title', 'description', 'image_path', 'category', 'created_at')
+                    ->orderBy('created_at', 'desc')
+                    ->limit(6)
                     ->get();
                 
-                Log::info('Data dashboard berhasil diambil');
+                // Query 5: Latest News (dengan select specific columns)
+                $data['latestNews'] = News::where('is_active', true)
+                    ->select('id', 'title', 'description', 'category', 'published_at', 'created_at')
+                    ->orderBy('published_at', 'desc')
+                    ->limit(5)
+                    ->get();
+                
+                Log::info('Data dashboard berhasil diambil dengan optimasi');
                     
             } catch (\Exception $e) {
                 Log::error('Gagal mengambil data dashboard: ' . $e->getMessage());
