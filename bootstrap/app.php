@@ -17,5 +17,18 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (Throwable $e, $request) {
+            // Return JSON for API routes that expect it
+            if ($request->is('api/*') || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'error' => env('APP_DEBUG') ? [
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => explode("\n", $e->getTraceAsString())
+                    ] : null
+                ], 500);
+            }
+        });
     })->create();

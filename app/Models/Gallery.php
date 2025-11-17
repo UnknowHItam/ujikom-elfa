@@ -24,17 +24,14 @@ class Gallery extends Model
 
     public function getImageUrlAttribute()
     {
-        // Check if image_path is a URL (starts with http)
+        // Jika sudah berupa URL lengkap, kembalikan langsung
         if (str_starts_with($this->image_path, 'http')) {
             return $this->image_path;
         }
         
-        // Use the correct server URL for Laravel development server
-        if (app()->environment('local') && request()->getHost() === '127.0.0.1') {
-            return request()->getSchemeAndHttpHost() . '/storage/' . $this->image_path;
-        }
-        
-        return asset('storage/' . $this->image_path);
+        // Construct URL secara manual untuk reliability
+        $appUrl = rtrim(config('app.url'), '/');
+        return $appUrl . '/storage/' . $this->image_path;
     }
 
     public function likes()

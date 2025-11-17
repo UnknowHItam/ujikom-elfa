@@ -15,24 +15,34 @@ class GalleryController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Gallery::where('is_active', true);
+        try {
+            $query = Gallery::where('is_active', true);
 
-        // Filter by category
-        if ($request->has('category') && $request->category !== 'all') {
-            $query->where('category', $request->category);
+            // Filter by category
+            if ($request->has('category') && $request->category !== 'all') {
+                $query->where('category', $request->category);
+            }
+
+            // Search by title
+            if ($request->has('search')) {
+                $query->where('title', 'like', '%' . $request->search . '%');
+            }
+
+            $galleries = $query->orderBy('created_at', 'desc')->paginate(12);
+
+            return response()->json([
+                'success' => true,
+                'data' => $galleries->toArray()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gallery Index Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading galleries',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : null
+            ], 500);
         }
-
-        // Search by title
-        if ($request->has('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
-        }
-
-        $galleries = $query->orderBy('created_at', 'desc')->paginate(12);
-
-        return response()->json([
-            'success' => true,
-            'data' => $galleries
-        ]);
     }
 
     /**
@@ -76,19 +86,29 @@ class GalleryController extends Controller
      */
     public function show(string $id)
     {
-        $gallery = Gallery::find($id);
+        try {
+            $gallery = Gallery::find($id);
 
-        if (!$gallery) {
+            if (!$gallery) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gallery not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $gallery->toArray()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gallery Show Error: ' . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Gallery not found'
-            ], 404);
+                'message' => 'Error loading gallery',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : null
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'data' => $gallery
-        ]);
     }
 
     /**
@@ -174,16 +194,26 @@ class GalleryController extends Controller
      */
     public function categories()
     {
-        $categories = [
-            'academic' => 'Akademik',
-            'extracurricular' => 'Ekstrakurikuler',
-            'event' => 'Acara & Event',
-            'common' => 'Umum'
-        ];
+        try {
+            $categories = [
+                'academic' => 'Akademik',
+                'extracurricular' => 'Ekstrakurikuler',
+                'event' => 'Acara & Event',
+                'general' => 'Umum'
+            ];
 
-        return response()->json([
-            'success' => true,
-            'data' => $categories
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $categories
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gallery Categories Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading categories',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 }
